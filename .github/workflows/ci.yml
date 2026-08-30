@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run Tests
+       run: npm test
+
       - name: Check application
         run: node --check src/server.js
 
