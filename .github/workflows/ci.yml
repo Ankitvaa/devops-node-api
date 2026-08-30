@@ -39,9 +39,9 @@ jobs:
           test -f src/server.js
           test -f src/routes/health.routes.js
           test -f src/controllers/health.controller.js
-
+  
   docker:
-    name: Build Docker Image
+    name: Build and Test Docker Image
     runs-on: ubuntu-latest
     needs: test
 
@@ -50,7 +50,52 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t devops-node-api:${{ github.sha }} .
+        run: |
+          docker build \
+            -t devops-node-api:${{ github.sha }} .
 
-      - name: Verify Docker image
-        run: docker images devops-node-api
+      - name: Run Docker container
+        run: |
+          docker run -d \
+            --name devops-node-api \
+            -p 5000:5000 \
+            devops-node-api:${{ github.sha }}
+
+      - name: Wait for application
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:5000/api/health; then
+              echo "Application is ready"
+              exit 0
+            fi
+
+            echo "Waiting for application..."
+            sleep 2
+          done
+
+          echo "Application failed to start"
+          docker logs devops-node-api
+          exit 1
+
+      - name: Test root endpoint
+        run: |
+          curl -fsS http://localhost:5000/
+
+      - name: Test health endpoint
+        run: |
+          curl -fsS http://localhost:5000/api/health
+
+      - name: Test readiness endpoint
+        run: |
+          curl -fsS http://localhost:5000/api/health/ready
+
+      - name: Show container logs
+        if: always()
+        run: |
+          docker logs devops-node-api
+
+      - name: Stop container
+        if: always()
+        run: |
+          docker stop devops-node-api || true
+          docker rm devops-node-api || true
