@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
@@ -20,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -33,7 +34,7 @@ jobs:
         run: node --check src/server.js
 
       - name: Check application files
-        run:
+        run: |
           test -f src/app.js
           test -f src/server.js
           test -f src/routes/health.routes.js
