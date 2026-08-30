@@ -1,0 +1,52 @@
+name: Node.js CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test Node.js Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check application
+        run: node --check src/server.js
+
+      - name: Check application files
+        run: |
+          test -f src/app.js
+          test -f src/server.js
+          test -f src/routes/health.routes.js
+          test -f src/controllers/health.controller.js
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t devops-node-api:${{ github.sha }} .
+
+      - name: Verify Docker image
+        run: docker images devops-node-api
